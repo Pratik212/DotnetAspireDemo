@@ -1,0 +1,137 @@
+﻿@page "/newemployee/{employeeId:long?}"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using DemoApplication.Web.Models
+@using static DemoApplication.Web.EmployeeApiClient
+@inject EmployeeApiClient EmployeeApi
+@inject NavigationManager NavigationManager
+
+<PageTitle>Employee Management</PageTitle>
+
+ <button type="submit" class="btn btn-primary mb-3" @onclick="HandleBack">Back</button>
+
+<h3>@(isEditMode ? "Update Employee" : "Create New Employee")</h3>
+
+<EditForm Model="employee" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="employee.Name" />
+        <ValidationMessage For="@(() => employee.Name)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <InputText id="email" class="form-control" @bind-Value="employee.Email" />
+        <ValidationMessage For="@(() => employee.Email)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="age" class="form-label">Age</label>
+        <InputNumber id="age" class="form-control" @bind-Value="employee.Age" />
+        <ValidationMessage For="@(() => employee.Age)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="address" class="form-label">Address</label>
+        <InputText id="address" class="form-control" @bind-Value="employee.Address" />
+        <ValidationMessage For="@(() => employee.Address)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="contact" class="form-label">Contact</label>
+        <InputText id="contact" class="form-control" @bind-Value="employee.Contact" />
+        <ValidationMessage For="@(() => employee.Contact)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+        @if (isEditMode)
+        {
+            <text>Update</text>
+        }
+        else
+        {
+            <text>Submit</text>
+        }
+    </button>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success mt-2">@successMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-2">@errorMessage</div>
+    }
+</EditForm>
+
+@code {
+    private EmployeeSSS employee = new EmployeeSSS();
+    private string successMessage;
+    private string errorMessage;
+    private bool isSubmitting = false;
+    private bool isEditMode = false;
+
+    [Parameter]
+    public long? employeeId { get; set; } // Optional parameter to detect if editing
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (employeeId.HasValue)
+        {
+            isEditMode = true;
+            await LoadEmployeeForEdit(employeeId.Value);
+        }
+    }
+
+    private async Task LoadEmployeeForEdit(long empId)
+    {
+        try
+        {
+            employee = await EmployeeApi.GetEmployeeById(empId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading employee: {ex.Message}";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            successMessage = errorMessage = string.Empty;
+
+            if (isEditMode)
+            {
+                await EmployeeApi.UpdateEmployee(employeeId.Value, employee);
+                successMessage = $"Employee '{employee.Name}' updated successfully!";
+            }
+            else
+            {
+                var addedEmployee = await EmployeeApi.AddEmployee(employee);
+                successMessage = $"Employee '{addedEmployee.Name}' added successfully!";
+            }
+
+            // Optionally navigate to another page
+            NavigationManager.NavigateTo("/employee");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void HandleBack()
+    {
+        NavigationManager.NavigateTo("/employee");
+    }
+}

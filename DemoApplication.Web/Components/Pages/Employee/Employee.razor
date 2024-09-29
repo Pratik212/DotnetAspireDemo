@@ -1,0 +1,84 @@
+﻿@page "/employee"
+@rendermode InteractiveServer
+@using static DemoApplication.Web.EmployeeApiClient
+@attribute [StreamRendering(true)]
+@attribute [OutputCache(Duration = 2)]
+@inject EmployeeApiClient EmployeeApi
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Employee</PageTitle>
+
+<p>This component demonstrates showing data loaded from a backend API service.</p>
+
+<button class="btn btn-primary" @onclick="AddNewEmployee">Add Employee</button>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success mt-2">@successMessage</div>
+}
+
+
+@if (employees == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Address</th>
+                <th>Contact</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in employees)
+            {
+                <tr>
+                    <td>@emp.Name</td>
+                    <td>@emp.Email</td>
+                    <td>@emp.Age</td>
+                    <td>@emp.Address</td>
+                    <td>@emp.Contact</td>
+                    <td class="cursor-pointer">
+                        <button class="btn btn-primary" @onclick="() => EditEmployee(emp.Id)">Update</button>
+                        <button class="btn btn-danger" @onclick="() => DeleteEmployeeDetail(emp.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<EmployeeSSS> employees = new List<EmployeeSSS>();
+    private string successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        successMessage = string.Empty;
+        employees = await EmployeeApi.GetEmployeesAsync();
+    }
+
+    private void AddNewEmployee()
+    {
+        NavigationManager.NavigateTo("/newemployee");
+    }
+
+    private void EditEmployee(long employeeId)
+    {
+        NavigationManager.NavigateTo($"/newemployee/{employeeId}"); 
+    }    
+    private async Task DeleteEmployeeDetail(long employeeId)
+    {
+        await EmployeeApi.DeleteEmployee(employeeId);
+        employees = await EmployeeApi.GetEmployeesAsync();
+        successMessage = "Employee successfully deleted.";
+
+    }
+}
